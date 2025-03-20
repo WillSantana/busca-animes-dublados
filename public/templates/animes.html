@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Anime Search - Para Amantes de Animes</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1>Anime Search</h1>
+      <p>Encontre seus animes favoritos com dublagem brasileira!</p>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Campo de Pesquisa -->
+    <div class="search-box">
+      <input type="text" id="search-input" placeholder="Digite o nome do anime...">
+      <button id="search-button"><i class="fas fa-search"></i> Buscar</button>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filters">
+      <div class="filter-group">
+        <label for="genre">Gênero:</label>
+        <select id="genre">
+          <option value="">Todos</option>
+          <option value="Ação">Ação</option>
+          <option value="Aventura">Aventura</option>
+          <option value="Comédia">Comédia</option>
+          <option value="Drama">Drama</option>
+          <option value="Fantasia">Fantasia</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label for="format">Formato:</label>
+        <select id="format">
+          <option value="">Todos</option>
+          <option value="OVA">OVA</option>
+          <option value="TV">TV</option>
+          <option value="Filme">Filme</option>
+          <option value="Especial">Especial</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Resultados -->
+    <div class="results">
+      <h2>Resultados da Busca</h2>
+      <div class="anime-list">
+        <!-- Os animes serão carregados aqui dinamicamente via JavaScript -->
+      </div>
+      <button id="load-more">Carregar Mais</button>
+    </div>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>&copy; 2024 Anime Search. Todos os direitos reservados.</p>
+    </div>
+  </footer>
+
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
