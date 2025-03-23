@@ -136,6 +136,7 @@ header p {
   color: #a1a1a1;
   display: -webkit-box;
   -webkit-line-clamp: 3; /* Limita o texto a 3 linhas */
+  line-clamp: 3; /* Limita o texto a 3 linhas */
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis; /* Adiciona "..." ao final do texto cortado */
@@ -144,6 +145,7 @@ header p {
 
 .anime-item p.expanded {
   -webkit-line-clamp: unset; /* Remove a limitação de linhas */
+  line-clamp: unset; /* Remove a limitação de linhas */
   display: block;
 }
 
