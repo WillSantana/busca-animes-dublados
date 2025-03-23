@@ -134,6 +134,32 @@ header p {
 .anime-item p {
   font-size: 1rem;
   color: #a1a1a1;
+  display: -webkit-box;
+  -webkit-line-clamp: 3; /* Limita o texto a 3 linhas */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis; /* Adiciona "..." ao final do texto cortado */
+  transition: all 0.3s ease;
+}
+
+.anime-item p.expanded {
+  -webkit-line-clamp: unset; /* Remove a limitação de linhas */
+  display: block;
+}
+
+.read-more-button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  cursor: pointer;
+  margin-top: 10px;
+  border-radius: 5px;
+  font-size: 0.9rem;
+}
+
+.read-more-button:hover {
+  background-color: #0056b3;
 }
 
 #load-more {
@@ -175,6 +201,32 @@ footer p {
   }
   #search-input {
     width: 100%;
+    margin-bottom: 10px;
+  }
+  .anime-banner {
+    width: 100%;
+    height: 300px;
+    background-size: cover;
+    background-position: center;
+    border-radius: 10px;
+    margin-bottom: 20px;
+  }
+  
+  .anime-info {
+    background-color: #2a2a40;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+  
+  .anime-info h2 {
+    font-size: 2rem;
+    margin-bottom: 10px;
+  }
+  
+  .anime-info p {
+    font-size: 1rem;
+    color: #a1a1a1;
     margin-bottom: 10px;
   }
 }
