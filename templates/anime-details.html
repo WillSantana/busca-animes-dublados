@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Detalhes do Anime</title>
+    <link
+      rel="icon"
+      href="{{ url_for('static', filename='favicon.ico') }}"
+      type="image/x-icon"
+    />
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css', v=1) }}">
+    />
+  </head>
+  <body>
+    <header>
+      <div class="container">
+        <h1 id="anime-title">Detalhes do Anime</h1>
+      </div>
+    </header>
+
+    <main class="container">
+      <div id="anime-details">
+        <!-- Detalhes do anime serão carregados aqui -->
+      </div>
+    </main>
+
+    <footer>
+      <div class="container">
+        <p>&copy; 2024 Anime Search. Todos os direitos reservados.</p>
+      </div>
+    </footer>
+
+    <script>
+      // Passa o anime_id para o JavaScript
+      const animeId = "{{ anime_id }}";
+    </script>
+    <script src="{{ url_for('static', filename='js/anime-details.js') }}"></script>
+  </body>
+</html>
