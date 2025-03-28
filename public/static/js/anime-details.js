@@ -1,28 +1,37 @@
 document.addEventListener('DOMContentLoaded', () => {
-  // Garante que o código seja executado apenas após o carregamento completo do DOM (estrutura HTML).
-  const animeId = window.animeId; // Captura o animeId passado pelo Flask. window.animeId é uma variável global definida no lado do servidor (Flask).
-
-  if (animeId) {
-    // Verifica se um animeId foi fornecido.
-    fetchAnimeDetails(animeId); // Se sim, chama a função para buscar os detalhes do anime.
-  } else {
-    // Se animeId não foi fornecido, exibe uma mensagem de anime não encontrado.
-    document.getElementById('anime-details').innerHTML = '<p>Anime não encontrado.</p>';
+  const animeDetailsContainer = document.getElementById('anime-details');
+  
+  // Verifica se o animeId foi passado corretamente
+  if (!window.animeId) {
+    animeDetailsContainer.innerHTML = `
+      <div class="error-message">
+        <p>Erro: ID do anime não especificado.</p>
+        <a href="/" class="back-link">Voltar à página inicial</a>
+      </div>
+    `;
+    return;
   }
+
+  // Mostra loading enquanto busca os dados
+  animeDetailsContainer.innerHTML = `
+    <div class="loading">
+      <div class="spinner"></div>
+      <p>Carregando detalhes do anime...</p>
+    </div>
+  `;
+
+  fetchAnimeDetails(window.animeId);
 });
 
 async function fetchAnimeDetails(animeId) {
-  // Função assíncrona para buscar os detalhes do anime usando a API GraphQL da AniList.
   try {
     const response = await fetch('https://graphql.anilist.co', {
-      // Faz uma requisição POST para a API GraphQL.
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json', // Define o tipo de conteúdo como JSON.
-        'Accept': 'application/json', // Define o tipo de resposta esperado como JSON.
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
       body: JSON.stringify({
-        // Converte a consulta GraphQL em uma string JSON.
         query: `
           query ($id: Int) {
             Media(id: $id, type: ANIME) {
@@ -34,72 +43,202 @@ async function fetchAnimeDetails(animeId) {
               }
               coverImage {
                 large
+                extraLarge
+                color
               }
               bannerImage
-              description
+              description(asHtml: false)
               episodes
               genres
               averageScore
+              status
+              startDate {
+                year
+                month
+                day
+              }
+              endDate {
+                year
+                month
+                day
+              }
+              studios(isMain: true) {
+                nodes {
+                  name
+                }
+              }
+              streamingEpisodes {
+                title
+                thumbnail
+                url
+                site
+              }
+              relations {
+                edges {
+                  relationType
+                  node {
+                    id
+                    title {
+                      romaji
+                    }
+                    type
+                  }
+                }
+              }
             }
           }
         `,
         variables: {
-          // Define as variáveis da consulta GraphQL.
-          id: parseInt(animeId), // Converte o animeId para um inteiro.
+          id: parseInt(animeId),
         },
       }),
     });
 
     if (!response.ok) {
-      // Verifica se a resposta da API foi bem-sucedida.
-      throw new Error('Erro na requisição'); // Se não, lança um erro.
+      throw new Error(`Erro na requisição: ${response.status}`);
     }
 
-    const data = await response.json(); // Converte a resposta JSON em um objeto JavaScript.
-    const anime = data.data.Media; // Extrai os dados do anime da resposta.
-    displayAnimeDetails(anime); // Chama a função para exibir os detalhes do anime na página.
+    const data = await response.json();
+    
+    if (!data.data || !data.data.Media) {
+      throw new Error('Dados do anime não encontrados');
+    }
+
+    displayAnimeDetails(data.data.Media);
   } catch (error) {
-    // Captura e trata erros durante a requisição.
     console.error('Erro ao buscar detalhes do anime:', error);
-    document.getElementById('anime-details').innerHTML = '<p>Erro ao carregar detalhes do anime.</p>'; // Exibe uma mensagem de erro na página.
+    document.getElementById('anime-details').innerHTML = `
+      <div class="error-message">
+        <p>Erro ao carregar detalhes do anime: ${error.message}</p>
+        <a href="/" class="back-link">Voltar à página inicial</a>
+      </div>
+    `;
   }
 }
 
 function displayAnimeDetails(anime) {
-  // Função para exibir os detalhes do anime na página.
-  const animeDetails = document.getElementById('anime-details'); // Obtém o elemento onde os detalhes serão exibidos.
+  const animeDetails = document.getElementById('anime-details');
+  
+  // Formata a descrição removendo tags HTML
+  const description = anime.description 
+    ? anime.description.replace(/<[^>]*>/g, '') 
+    : 'Descrição não disponível.';
+  
+  // Formata a data de início
+  const startDate = anime.startDate 
+    ? `${anime.startDate.day || '??'}/${anime.startDate.month || '??'}/${anime.startDate.year || '????'}` 
+    : 'Não especificada';
+  
+  // Formata os estúdios
+  const studios = anime.studios?.nodes?.length > 0 
+    ? anime.studios.nodes.map(studio => studio.name).join(', ') 
+    : 'Não especificado';
 
-  const animeBanner = document.createElement('div'); // Cria um elemento div para o banner do anime.
-  animeBanner.classList.add('anime-banner'); // Adiciona uma classe CSS para estilização.
-  animeBanner.style.backgroundImage = `url(${anime.bannerImage || anime.coverImage.large})`; // Define a imagem de fundo do banner (usa bannerImage se disponível, senão coverImage).
-  animeBanner.style.height = '300px'; // Define a altura do banner.
-  animeBanner.style.backgroundSize = 'cover'; // Garante que a imagem cubra todo o espaço do banner.
-  animeBanner.style.backgroundPosition = 'center'; // Centraliza a imagem no banner.
+  // Seção de Episódios
+  let episodesHtml = '';
+  if (anime.streamingEpisodes && anime.streamingEpisodes.length > 0) {
+    episodesHtml = `
+      <div class="episodes-section">
+        <h3>Episódios Disponíveis</h3>
+        <div class="episodes-list">
+          ${anime.streamingEpisodes.map(ep => `
+            <div class="episode-card">
+              <a href="${ep.url}" target="_blank" rel="noopener noreferrer">
+                <img src="${ep.thumbnail || anime.coverImage.large}" alt="${ep.title}">
+                <div class="episode-info">
+                  <h4>${ep.title || 'Episódio'}</h4>
+                  <span class="site">${ep.site}</span>
+                </div>
+              </a>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  } else if (anime.episodes) {
+    episodesHtml = `
+      <div class="episodes-section">
+        <h3>Episódios</h3>
+        <p>Total de episódios: ${anime.episodes}</p>
+      </div>
+    `;
+  }
 
-  const animeInfo = document.createElement('div'); // Cria um elemento div para as informações do anime.
-  animeInfo.classList.add('anime-info'); // Adiciona uma classe CSS para estilização.
+  // Seção de Relacionados
+  let relationsHtml = '';
+  if (anime.relations && anime.relations.edges.length > 0) {
+    const relatedAnimes = anime.relations.edges.filter(rel => rel.node.type === 'ANIME').slice(0, 5);
+    if (relatedAnimes.length > 0) {
+      relationsHtml = `
+        <div class="related-section">
+          <h3>Relacionados</h3>
+          <div class="related-list">
+            ${relatedAnimes.map(rel => `
+              <a href="/anime-details?id=${rel.node.id}" class="related-item">
+                ${rel.node.title.romaji}
+                <span class="relation-type">${formatRelationType(rel.relationType)}</span>
+              </a>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+  }
 
-  const animeTitle = document.createElement('h2'); // Cria um elemento h2 para o título do anime.
-  animeTitle.textContent = anime.title.romaji || anime.title.english || anime.title.native; // Define o título do anime (usa romaji, english ou native, na ordem).
+  // Cria o HTML completo
+  animeDetails.innerHTML = `
+    <div class="anime-banner" style="background-image: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url('${anime.bannerImage || anime.coverImage.extraLarge}')">
+      <div class="banner-overlay"></div>
+    </div>
+    
+    <div class="anime-info">
+      <h2>${anime.title.romaji || anime.title.english || anime.title.native}</h2>
+      
+      <div class="anime-meta">
+        <span class="score">⭐ ${anime.averageScore || 'N/A'}/100</span>
+        <span class="episodes">📺 ${anime.episodes || 'N/A'} episódios</span>
+        <span class="status">${anime.status || 'Status desconhecido'}</span>
+      </div>
+      
+      <div class="anime-description">
+        <h3>Sinopse</h3>
+        <p>${description}</p>
+      </div>
+      
+      <div class="anime-details-grid">
+        <div class="detail-item">
+          <h4>Data de Início</h4>
+          <p>${startDate}</p>
+        </div>
+        
+        <div class="detail-item">
+          <h4>Gêneros</h4>
+          <p>${anime.genres?.join(', ') || 'N/A'}</p>
+        </div>
+        
+        <div class="detail-item">
+          <h4>Estúdio</h4>
+          <p>${studios}</p>
+        </div>
+      </div>
+      
+      ${episodesHtml}
+      ${relationsHtml}
+    </div>
+  `;
+}
 
-  const animeDescription = document.createElement('p'); // Cria um elemento p para a descrição do anime.
-  animeDescription.textContent = anime.description || 'Descrição não disponível.'; // Define a descrição do anime ou uma mensagem padrão.
-
-  const animeEpisodes = document.createElement('p'); // Cria um elemento p para o número de episódios.
-  animeEpisodes.textContent = `Episódios: ${anime.episodes || 'N/A'}`; // Define o número de episódios ou 'N/A' se não disponível.
-
-  const animeGenres = document.createElement('p'); // Cria um elemento p para os gêneros do anime.
-  animeGenres.textContent = `Gêneros: ${anime.genres.join(', ') || 'N/A'}`; // Define os gêneros do anime ou 'N/A' se não disponíveis.
-
-  const animeScore = document.createElement('p'); // Cria um elemento p para a pontuação média do anime.
-  animeScore.textContent = `Pontuação Média: ${anime.averageScore || 'N/A'}`; // Define a pontuação média ou 'N/A' se não disponível.
-
-  animeInfo.appendChild(animeTitle); // Adiciona o título ao container de informações.
-  animeInfo.appendChild(animeDescription); // Adiciona a descrição ao container de informações.
-  animeInfo.appendChild(animeEpisodes); // Adiciona o número de episódios ao container de informações.
-  animeInfo.appendChild(animeGenres); // Adiciona os gêneros ao container de informações.
-  animeInfo.appendChild(animeScore); // Adiciona a pontuação média ao container de informações.
-
-  animeDetails.appendChild(animeBanner); // Adiciona o banner ao container principal.
-  animeDetails.appendChild(animeInfo); // Adiciona o container de informações ao container principal.
+// Função auxiliar para formatar os tipos de relação
+function formatRelationType(type) {
+  const types = {
+    'PREQUEL': 'Prequela',
+    'SEQUEL': 'Sequela',
+    'PARENT': 'Original',
+    'SIDE_STORY': 'História Paralela',
+    'CHARACTER': 'Mesmos Personagens',
+    'SUMMARY': 'Resumo',
+    'ALTERNATIVE': 'Versão Alternativa',
+    'OTHER': 'Outro'
+  };
+  return types[type] || type;
 }
