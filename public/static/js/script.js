@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const searchInput = document.getElementById('search-input');
   const searchButton = document.getElementById('search-button');
   const animeList = document.querySelector('.anime-list');
+  const loadMoreButton = document.getElementById('load-more');
 
   // Função para traduzir texto usando MyMemory
   async function translateText(text, targetLanguage = 'pt') {
@@ -134,5 +135,13 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       alert('Por favor, insira um termo de busca.');
     }
+  });
+
+  // Evento de clique no botão de carregar mais
+  loadMoreButton.addEventListener('click', async () => {
+    // Simule o carregamento com um timeout (substitua pelo código real de carregamento)
+    setTimeout(() => {
+      // ...código para carregar mais resultados...
+    }, 2000);
   });
 });
