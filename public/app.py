@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, send_from_directory
 import os
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static', static_url_path='/static')  # Garante que os arquivos estáticos sejam servidos corretamente
 
 @app.route('/')
 def index():

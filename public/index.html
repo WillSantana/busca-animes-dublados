@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <!-- Metadados e título da página -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Busca Animes Dublados</title>
+    <link rel="stylesheet" href="/static/css/styles.css" />
+  </head>
+  <body>
+    <!-- Cabeçalho -->
+    <header>
+      <h1>Busca Animes Dublados</h1>
+      <p>Encontre os melhores animes dublados</p>
+    </header>
+
+    <!-- Caixa de busca -->
+    <div class="search-box">
+      <input type="text" id="search-input" placeholder="Buscar anime..." />
+      <button id="search-button">Buscar</button>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filters">
+      <div class="filter-group">
+        <label for="genre-select">Gênero:</label>
+        <select id="genre-select">
+          <option value="all">Todos</option>
+          <option value="action">Ação</option>
+          <option value="comedy">Comédia</option>
+          <option value="drama">Drama</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label for="year-select">Ano:</label>
+        <select id="year-select">
+          <option value="all">Todos</option>
+          <option value="2023">2023</option>
+          <option value="2022">2022</option>
+          <option value="2021">2021</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Resultados -->
+    <div class="results">
+      <h2>Resultados</h2>
+      <div class="anime-list" id="anime-list">
+        <!-- Lista de animes será gerada dinamicamente -->
+      </div>
+      <button id="load-more">Carregar mais</button>
+    </div>
+
+    <!-- Rodapé -->
+    <footer>
+      <p>&copy; 2023 Busca Animes Dublados. Todos os direitos reservados.</p>
+    </footer>
+  </body>
+</html>
