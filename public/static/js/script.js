@@ -1,24 +1,14 @@
+// static/js/script.js
 document.addEventListener('DOMContentLoaded', () => {
   const searchInput = document.getElementById('search-input');
   const searchButton = document.getElementById('search-button');
   const animeList = document.querySelector('.anime-list');
   const loadMoreButton = document.getElementById('load-more');
+  let currentPage = 1;
+  let currentQuery = '';
+  let hasMoreResults = false;
 
-  // Função para traduzir texto usando MyMemory
-  async function translateText(text, targetLanguage = 'pt') {
-    try {
-      const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${targetLanguage}`;
-      const response = await fetch(url);
-      const data = await response.json();
-      return data.responseData.translatedText;
-    } catch (error) {
-      console.error('Erro ao traduzir texto:', error);
-      return text; // Retorna o texto original em caso de erro
-    }
-  }
-
-  // Função para buscar animes na API do AniList
-  async function searchAnimes(query) {
+  async function searchAnimes(query, page = 1) {
     try {
       const response = await fetch('https://graphql.anilist.co', {
         method: 'POST',
@@ -28,8 +18,14 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         body: JSON.stringify({
           query: `
-            query ($search: String) {
-              Page(page: 1, perPage: 10) {
+            query ($search: String, $page: Int, $perPage: Int) {
+              Page(page: $page, perPage: $perPage) {
+                pageInfo {
+                  total
+                  currentPage
+                  lastPage
+                  hasNextPage
+                }
                 media(search: $search, type: ANIME, isAdult: false) {
                   id
                   title {
@@ -39,109 +35,96 @@ document.addEventListener('DOMContentLoaded', () => {
                   }
                   coverImage {
                     large
+                    color
                   }
-                  description
+                  description(asHtml: false)
+                  episodes
+                  genres
+                  averageScore
                 }
               }
             }
           `,
           variables: {
             search: query,
+            page: page,
+            perPage: 10
           },
         }),
       });
 
-      if (!response.ok) {
-        throw new Error('Erro na requisição');
-      }
+      if (!response.ok) throw new Error('Erro na requisição');
 
       const data = await response.json();
-      return data.data.Page.media;
+      return {
+        animes: data.data.Page.media,
+        pageInfo: data.data.Page.pageInfo
+      };
     } catch (error) {
       console.error('Erro ao buscar animes:', error);
-      return [];
+      return { animes: [], pageInfo: {} };
     }
   }
 
-  // Função para atualizar a lista de animes
-  async function updateAnimeList(animes) {
-    animeList.innerHTML = '';
-
-    if (animes.length === 0) {
-      animeList.innerHTML = '<p>Nenhum anime encontrado.</p>';
+  function displayAnimes(animes, clear = true) {
+    if (clear) animeList.innerHTML = '';
+    
+    if (animes.length === 0 && clear) {
+      animeList.innerHTML = '<p class="no-results">Nenhum anime encontrado.</p>';
+      loadMoreButton.style.display = 'none';
       return;
     }
 
-    for (const anime of animes) {
+    animes.forEach(anime => {
       const animeItem = document.createElement('div');
-      animeItem.classList.add('anime-item');
-
-      const animeCover = document.createElement('img');
-      animeCover.src = anime.coverImage.large;
-      animeCover.alt = anime.title.romaji;
-
-      // Adiciona evento de clique no banner
-      animeCover.addEventListener('click', () => {
-        window.location.href = `/anime-details?id=${anime.id}`;
-      });
-
-      const animeName = document.createElement('h3');
-      animeName.textContent = anime.title.romaji || anime.title.english || anime.title.native;
-
-      const animeDescription = document.createElement('p');
-      animeDescription.textContent = anime.description || 'Descrição não disponível.';
-
-      const readMoreButton = document.createElement('button');
-      readMoreButton.textContent = 'Leia mais';
-      readMoreButton.classList.add('read-more-button');
-
-      // Adiciona evento para expandir/recolher o texto
-      readMoreButton.addEventListener('click', () => {
-        animeDescription.classList.toggle('expanded');
-        readMoreButton.textContent = animeDescription.classList.contains('expanded') ? 'Mostrar menos' : 'Leia mais';
-      });
-
-      animeItem.appendChild(animeCover);
-      animeItem.appendChild(animeName);
-      animeItem.appendChild(animeDescription);
-      animeItem.appendChild(readMoreButton);
+      animeItem.className = 'anime-item';
+      animeItem.innerHTML = `
+        <a href="/anime-details?id=${anime.id}" class="anime-link">
+          <div class="anime-cover" style="background-image: url('${anime.coverImage.large}')"></div>
+          <h3>${anime.title.romaji || anime.title.english || anime.title.native}</h3>
+          <div class="anime-meta">
+            <span class="score">⭐ ${anime.averageScore || 'N/A'}</span>
+            <span class="episodes">📺 ${anime.episodes || 'N/A'}</span>
+          </div>
+          <p class="anime-description">${anime.description ? anime.description.substring(0, 100) + '...' : 'Descrição não disponível.'}</p>
+        </a>
+      `;
       animeList.appendChild(animeItem);
-
-      // Traduzir o título e a descrição após exibir o conteúdo original
-      translateText(animeName.textContent)
-        .then(translatedTitle => {
-          animeName.textContent = translatedTitle;
-        })
-        .catch(error => {
-          console.error('Erro ao traduzir título:', error);
-        });
-
-      translateText(animeDescription.textContent)
-        .then(translatedDescription => {
-          animeDescription.textContent = translatedDescription;
-        })
-        .catch(error => {
-          console.error('Erro ao traduzir descrição:', error);
-        });
-    }
+    });
   }
 
-  // Evento de clique no botão de busca
-  searchButton.addEventListener('click', async () => {
+  async function performSearch(query, page = 1) {
+    const loading = document.createElement('div');
+    loading.className = 'loading';
+    loading.innerHTML = '<div class="spinner"></div>';
+    animeList.appendChild(loading);
+
+    const { animes, pageInfo } = await searchAnimes(query, page);
+    currentQuery = query;
+    currentPage = page;
+    hasMoreResults = pageInfo.hasNextPage;
+    
+    loading.remove();
+    displayAnimes(animes, page === 1);
+    loadMoreButton.style.display = hasMoreResults ? 'block' : 'none';
+  }
+
+  searchButton.addEventListener('click', () => {
     const query = searchInput.value.trim();
-    if (query) {
-      const animes = await searchAnimes(query);
-      await updateAnimeList(animes);
-    } else {
-      alert('Por favor, insira um termo de busca.');
+    if (query) performSearch(query);
+  });
+
+  searchInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      const query = searchInput.value.trim();
+      if (query) performSearch(query);
     }
   });
 
-  // Evento de clique no botão de carregar mais
-  loadMoreButton.addEventListener('click', async () => {
-    // Simule o carregamento com um timeout (substitua pelo código real de carregamento)
-    setTimeout(() => {
-      // ...código para carregar mais resultados...
-    }, 2000);
+  loadMoreButton.addEventListener('click', () => {
+    performSearch(currentQuery, currentPage + 1);
   });
+
+  // Busca inicial vazia para mostrar alguns animes populares
+  performSearch('');
 });

@@ -34,5 +34,8 @@
     window.animeId = {{ anime_id|tojson|safe }};
   </script>
   <script src="{{ url_for('static', filename='js/anime-details.js') }}"></script>
+  <!-- No final do body -->
+<script src="{{ url_for('static', filename='js/anime-searcher.js') }}"></script>
+<script src="{{ url_for('static', filename='js/anime-details.js') }}"></script>
 </body>
 </html>
