@@ -655,3 +655,237 @@ footer p {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+/* Mensagem de boas-vindas */
+.welcome-message {
+  text-align: center;
+  padding: 40px 20px;
+  color: #a1a1a1;
+  line-height: 1.6;
+  font-size: 1.1rem;
+}
+
+.welcome-message p:first-child {
+  font-size: 1.3rem;
+  margin-bottom: 10px;
+  color: #ddd;
+}
+
+/* Mensagem de nenhum resultado */
+.no-results {
+  text-align: center;
+  padding: 40px 20px;
+  color: #ff6b81;
+}
+
+.no-results p:first-child {
+  font-size: 1.2rem;
+  margin-bottom: 10px;
+}
+
+/* Loading spinner */
+.loading {
+  text-align: center;
+  padding: 50px;
+}
+
+.spinner {
+  border: 5px solid #3a3a5a;
+  border-top: 5px solid #ff4757;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Mensagem de erro */
+.error {
+  text-align: center;
+  padding: 30px;
+  color: #ff6b81;
+}
+/* Estilos para os cards de anime */
+.anime-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 25px;
+  padding: 20px 0;
+}
+
+.anime-card {
+  background: #2a2a40;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.anime-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+.anime-card-inner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.anime-image-container {
+  position: relative;
+  width: 100%;
+  padding-top: 140%; /* Proporção 1:1.4 */
+  overflow: hidden;
+}
+
+.anime-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.anime-card:hover .anime-image {
+  transform: scale(1.05);
+}
+
+.anime-score {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.high-score { color: #4CAF50; }
+.medium-score { color: #FFC107; }
+.low-score { color: #F44336; }
+.no-score { color: #9E9E9E; }
+
+.anime-info {
+  padding: 20px;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.anime-title {
+  margin: 0 0 10px 0;
+  color: #fff;
+  font-size: 1.2rem;
+  line-height: 1.3;
+}
+
+.anime-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+  font-size: 0.9rem;
+  color: #a1a1a1;
+}
+
+.anime-meta i {
+  margin-right: 5px;
+  color: #ff4757;
+}
+
+.anime-description {
+  color: #d1d1d1;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin-bottom: 15px;
+  flex-grow: 1;
+}
+
+.details-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 15px;
+  background: #ff4757;
+  color: white;
+  text-decoration: none;
+  border-radius: 5px;
+  font-size: 0.9rem;
+  transition: background 0.2s;
+}
+
+.details-button:hover {
+  background: #ff6b81;
+}
+
+.details-button i {
+  margin-left: 5px;
+  font-size: 0.8rem;
+}
+
+/* Mensagens e loading */
+.welcome-message, .no-results, .error {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 50px 20px;
+  color: #a1a1a1;
+}
+
+.welcome-message i, .no-results i, .error i {
+  font-size: 2rem;
+  margin-bottom: 15px;
+  color: #ff4757;
+}
+
+.welcome-message p, .no-results p, .error p {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.loading {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 50px;
+}
+
+.spinner {
+  border: 5px solid #3a3a5a;
+  border-top: 5px solid #ff4757;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .anime-list {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .anime-list {
+    grid-template-columns: 1fr;
+  }
+}

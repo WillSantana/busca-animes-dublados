@@ -1,4 +1,3 @@
-// static/js/script.js
 document.addEventListener('DOMContentLoaded', () => {
   const searchInput = document.getElementById('search-input');
   const searchButton = document.getElementById('search-button');
@@ -7,6 +6,19 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentPage = 1;
   let currentQuery = '';
   let hasMoreResults = false;
+
+  // Configuração inicial
+  loadMoreButton.style.display = 'none';
+  showWelcomeMessage();
+
+  function showWelcomeMessage() {
+    animeList.innerHTML = `
+      <div class="welcome-message">
+        <i class="fas fa-search"></i>
+        <p>Busque por animes como "Naruto", "Attack on Titan" ou "Demon Slayer"</p>
+      </div>
+    `;
+  }
 
   async function searchAnimes(query, page = 1) {
     try {
@@ -21,9 +33,6 @@ document.addEventListener('DOMContentLoaded', () => {
             query ($search: String, $page: Int, $perPage: Int) {
               Page(page: $page, perPage: $perPage) {
                 pageInfo {
-                  total
-                  currentPage
-                  lastPage
                   hasNextPage
                 }
                 media(search: $search, type: ANIME, isAdult: false) {
@@ -35,12 +44,14 @@ document.addEventListener('DOMContentLoaded', () => {
                   }
                   coverImage {
                     large
+                    extraLarge
                     color
                   }
                   description(asHtml: false)
                   episodes
                   genres
                   averageScore
+                  bannerImage
                 }
               }
             }
@@ -54,7 +65,6 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       if (!response.ok) throw new Error('Erro na requisição');
-
       const data = await response.json();
       return {
         animes: data.data.Page.media,
@@ -70,61 +80,106 @@ document.addEventListener('DOMContentLoaded', () => {
     if (clear) animeList.innerHTML = '';
     
     if (animes.length === 0 && clear) {
-      animeList.innerHTML = '<p class="no-results">Nenhum anime encontrado.</p>';
+      animeList.innerHTML = `
+        <div class="no-results">
+          <i class="fas fa-frown"></i>
+          <p>Nenhum anime encontrado para "${currentQuery}"</p>
+        </div>
+      `;
       loadMoreButton.style.display = 'none';
       return;
     }
 
     animes.forEach(anime => {
       const animeItem = document.createElement('div');
-      animeItem.className = 'anime-item';
+      animeItem.className = 'anime-card';
+      
+      // Card do anime com imagem
       animeItem.innerHTML = `
-        <a href="/anime-details?id=${anime.id}" class="anime-link">
-          <div class="anime-cover" style="background-image: url('${anime.coverImage.large}')"></div>
-          <h3>${anime.title.romaji || anime.title.english || anime.title.native}</h3>
-          <div class="anime-meta">
-            <span class="score">⭐ ${anime.averageScore || 'N/A'}</span>
-            <span class="episodes">📺 ${anime.episodes || 'N/A'}</span>
+        <div class="anime-card-inner">
+          <div class="anime-image-container">
+            <img src="${anime.coverImage.large || anime.coverImage.extraLarge}" 
+                 alt="${anime.title.romaji || anime.title.english || anime.title.native}"
+                 class="anime-image">
+            <div class="anime-score ${getScoreColor(anime.averageScore)}">
+              ${anime.averageScore || 'N/A'}
+            </div>
           </div>
-          <p class="anime-description">${anime.description ? anime.description.substring(0, 100) + '...' : 'Descrição não disponível.'}</p>
-        </a>
+          <div class="anime-info">
+            <h3 class="anime-title">${anime.title.romaji || anime.title.english || anime.title.native}</h3>
+            <div class="anime-meta">
+              <span class="anime-episodes">
+                <i class="fas fa-play-circle"></i> ${anime.episodes || '?'} episódios
+              </span>
+              <span class="anime-genres">
+                ${anime.genres?.slice(0, 3).join(' · ') || 'Gênero desconhecido'}
+              </span>
+            </div>
+            <p class="anime-description">
+              ${anime.description ? truncateDescription(anime.description) : 'Descrição não disponível.'}
+            </p>
+            <a href="/anime-details?id=${anime.id}" class="details-button">
+              Ver detalhes <i class="fas fa-chevron-right"></i>
+            </a>
+          </div>
+        </div>
       `;
+      
       animeList.appendChild(animeItem);
     });
   }
 
-  async function performSearch(query, page = 1) {
-    const loading = document.createElement('div');
-    loading.className = 'loading';
-    loading.innerHTML = '<div class="spinner"></div>';
-    animeList.appendChild(loading);
-
-    const { animes, pageInfo } = await searchAnimes(query, page);
-    currentQuery = query;
-    currentPage = page;
-    hasMoreResults = pageInfo.hasNextPage;
-    
-    loading.remove();
-    displayAnimes(animes, page === 1);
-    loadMoreButton.style.display = hasMoreResults ? 'block' : 'none';
+  function getScoreColor(score) {
+    if (!score) return 'no-score';
+    if (score >= 80) return 'high-score';
+    if (score >= 60) return 'medium-score';
+    return 'low-score';
   }
 
-  searchButton.addEventListener('click', () => {
-    const query = searchInput.value.trim();
-    if (query) performSearch(query);
-  });
+  function truncateDescription(text) {
+    const cleanText = text.replace(/<[^>]*>/g, '');
+    return cleanText.length > 150 ? cleanText.substring(0, 150) + '...' : cleanText;
+  }
 
-  searchInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-      const query = searchInput.value.trim();
-      if (query) performSearch(query);
+  async function performSearch(query, page = 1) {
+    if (!query.trim()) {
+      showWelcomeMessage();
+      return;
     }
-  });
 
-  loadMoreButton.addEventListener('click', () => {
-    performSearch(currentQuery, currentPage + 1);
-  });
+    const loading = document.createElement('div');
+    loading.className = 'loading';
+    loading.innerHTML = '<div class="spinner"></div><p>Buscando animes...</p>';
+    animeList.innerHTML = '';
+    animeList.appendChild(loading);
 
-  // Busca inicial vazia para mostrar alguns animes populares
-  performSearch('');
+    try {
+      const { animes, pageInfo } = await searchAnimes(query, page);
+      currentQuery = query;
+      currentPage = page;
+      hasMoreResults = pageInfo.hasNextPage;
+      
+      loading.remove();
+      displayAnimes(animes, page === 1);
+      loadMoreButton.style.display = hasMoreResults ? 'block' : 'none';
+    } catch (error) {
+      loading.remove();
+      animeList.innerHTML = `
+        <div class="error">
+          <i class="fas fa-exclamation-triangle"></i>
+          <p>Erro na busca: ${error.message}</p>
+        </div>
+      `;
+    }
+  }
+
+  // Event Listeners
+  searchButton.addEventListener('click', () => performSearch(searchInput.value.trim()));
+  searchInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') performSearch(searchInput.value.trim());
+  });
+  loadMoreButton.addEventListener('click', () => performSearch(currentQuery, currentPage + 1));
+
+  // Foco inicial no campo de busca
+  searchInput.focus();
 });
