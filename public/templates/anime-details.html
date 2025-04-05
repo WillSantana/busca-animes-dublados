@@ -1,41 +1,45 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" class="details-page">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Detalhes do Anime</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+  <title>Detalhes do Anime - Anime Search</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles-details.css') }}">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
 </head>
 <body>
-  <header>
-    <div class="container">
-      <a href="/" class="back-button">← Voltar</a>
-      <h1>Anime Search</h1>
-      <p>Detalhes completos do anime</p>
+  <!-- Cabeçalho -->
+  <header class="details-header">
+    <div class="header-content">
+      <h1 class="page-title">Detalhes do Anime</h1>
+      <p class="page-subtitle">Informações completas e episódios disponíveis</p>
     </div>
   </header>
 
-  <main class="container">
+  <div class="details-container">
     <div id="anime-details">
-      <!-- Os detalhes do anime serão carregados aqui dinamicamente -->
+      <!-- Conteúdo será carregado dinamicamente via JavaScript -->
     </div>
-  </main>
+  </div>
 
-  <footer>
+  <!-- Rodapé -->
+  <footer class="details-footer">
     <div class="container">
       <p>&copy; 2024 Anime Search. Todos os direitos reservados.</p>
     </div>
   </footer>
 
   <script>
-    // Passa o anime_id para o JavaScript corretamente
-    window.animeId = {{ anime_id|tojson|safe }};
+    // Captura o ID da URL como fallback
+    const urlParams = new URLSearchParams(window.location.search);
+    window.animeId = urlParams.get('id');
+    console.log('ID do anime capturado:', window.animeId); // Debug
   </script>
+
+  <!-- Scripts (ORDEM É IMPORTANTE) -->
+  <script src="{{ url_for('static', filename='js/anime-searcher.js') }}"></script>
   <script src="{{ url_for('static', filename='js/anime-details.js') }}"></script>
-  <!-- No final do body -->
-<script src="{{ url_for('static', filename='js/anime-searcher.js') }}"></script>
-<script src="{{ url_for('static', filename='js/anime-details.js') }}"></script>
 </body>
 </html>

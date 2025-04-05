@@ -11,21 +11,19 @@
 </head>
 <body>
   <header>
-    <div class="container">
+    <div class="header-container">
       <h1>Anime Search</h1>
       <p>Encontre seus animes favoritos com dublagem brasileira!</p>
-    </div>
-  </header>
-
-  <main class="container">
-    <!-- Campo de Pesquisa -->
-    
-    <!-- Filtros -->
-    <div class="filters">
       <div class="search-box">
         <input type="text" id="search-input" placeholder="Digite o nome do anime...">
         <button id="search-button"><i class="fas fa-search"></i> Buscar</button>
       </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Filtros -->
+    <div class="filters">
       <div class="filter-group">
         <label for="genre">Gênero:</label>
         <select id="genre">
@@ -67,7 +65,5 @@
   </footer>
 
   <script src="{{ url_for('static', filename='js/script.js') }}"></script>
-  <!-- No final do body -->
-<script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 </html>
