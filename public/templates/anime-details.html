@@ -24,6 +24,23 @@
     </div>
   </div>
 
+  <!-- Botão de voltar -->
+  <div class="back-button">
+    <a href="/" class="back-link">
+      <i class="fas fa-arrow-left"></i> Voltar à página inicial
+    </a>
+  </div>
+
+  <!-- Botão de tentar novamente
+  <button class="retry-button">
+    <i class="fas fa-sync-alt"></i> Tentar novamente
+  </button> -->
+
+  <!-- Botão de carregar mais episódios
+  <button class="load-more-button">
+    <i class="fas fa-plus"></i> Carregar mais episódios
+  </button> -->
+
   <!-- Rodapé -->
   <footer class="details-footer">
     <div class="container">
@@ -35,10 +52,10 @@
     // Captura o ID da URL como fallback
     const urlParams = new URLSearchParams(window.location.search);
     window.animeId = urlParams.get('id');
-    console.log('ID do anime capturado:', window.animeId); // Debug
+    console.log('ID do anime capturado:', window.animeId);
   </script>
 
-  <!-- Scripts (ORDEM É IMPORTANTE) -->
+  <!-- Scripts -->
   <script src="{{ url_for('static', filename='js/anime-searcher.js') }}"></script>
   <script src="{{ url_for('static', filename='js/anime-details.js') }}"></script>
 </body>

@@ -1,38 +1,52 @@
+// Configurações globais
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 2000;
+
+// Elementos do DOM
+const animeDetailsContainer = document.getElementById('anime-details');
+const retryButton = document.querySelector('.retry-button');
+const loadMoreButton = document.querySelector('.load-more-button');
+
+// Estado da aplicação
+let currentAnimeId = null;
+let retryCount = 0;
+
 // Funções auxiliares
 function showLoading() {
-  const container = document.getElementById('anime-details');
-  if (!container) return;
+  if (!animeDetailsContainer) return;
   
-  container.innerHTML = `
-    <div class="loading">
-      <div class="spinner"></div>
-      <p>Carregando detalhes do anime...</p>
+  animeDetailsContainer.innerHTML = `
+    <div class="loading-container">
+      <div class="spinner">
+        <div class="double-bounce1"></div>
+        <div class="double-bounce2"></div>
+      </div>
+      <p class="loading-text">Carregando detalhes do anime...</p>
     </div>
   `;
 }
 
-function showError(message, type = 'error') {
-  const container = document.getElementById('anime-details');
-  if (!container) return;
+function showError(message, isRetryable = true) {
+  if (!animeDetailsContainer) return;
   
-  const errorClass = type === 'warning' ? 'warning' : 'error';
-  container.innerHTML = `
-    <div class="${errorClass}">
-      <i class="fas fa-${type === 'warning' ? 'exclamation-triangle' : 'times-circle'}"></i>
-      <p>${message}</p>
-      <button class="retry-button">
-        <i class="fas fa-sync-alt"></i> Tentar novamente
-      </button>
-      <a href="/" class="back-link">
-        <i class="fas fa-arrow-left"></i> Voltar à página inicial
-      </a>
+  animeDetailsContainer.innerHTML = `
+    <div class="error-container">
+      <i class="fas fa-exclamation-triangle"></i>
+      <h3 class="error-title">Ocorreu um erro</h3>
+      <p class="error-message">${message}</p>
+      ${isRetryable ? `
+        <button class="retry-btn">
+          <i class="fas fa-sync-alt"></i> Tentar novamente
+        </button>
+      ` : ''}
     </div>
   `;
 
-  // Configurar botão de tentar novamente
-  const retryBtn = container.querySelector('.retry-button');
-  if (retryBtn) {
-    retryBtn.addEventListener('click', () => loadAnimeData());
+  if (isRetryable) {
+    const retryBtn = animeDetailsContainer.querySelector('.retry-btn');
+    retryBtn?.addEventListener('click', () => {
+      if (currentAnimeId) loadAnimeData(currentAnimeId);
+    });
   }
 }
 
@@ -44,16 +58,18 @@ function formatStatus(status) {
     'CANCELLED': 'Cancelado',
     'HIATUS': 'Em hiato'
   };
-  return statusMap[status] || status || 'Desconhecido';
+  return statusMap[status] || status;
 }
 
 function formatDate(date) {
-  if (!date || !date.year) return 'Não especificada';
-  return `${date.day || '??'}/${date.month || '??'}/${date.year}`;
+  if (!date?.year) return 'Não especificada';
+  const day = date.day ? date.day.toString().padStart(2, '0') : '??';
+  const month = date.month ? date.month.toString().padStart(2, '0') : '??';
+  return `${day}/${month}/${date.year}`;
 }
 
-function renderEpisodes(episodes) {
-  if (!episodes || episodes.length === 0) {
+function renderEpisodes(episodes = []) {
+  if (!episodes.length) {
     return `
       <div class="no-episodes">
         <i class="fas fa-info-circle"></i>
@@ -67,17 +83,22 @@ function renderEpisodes(episodes) {
       ${episodes.map(ep => `
         <div class="episode-card">
           <div class="episode-thumbnail">
-            <img src="${ep.thumbnail || '/static/images/default-episode.jpg'}" 
+            <img src="${ep.thumbnail}" 
                  alt="Episódio ${ep.number}"
+                 loading="lazy"
                  onerror="this.src='/static/images/default-episode.jpg'">
             <span class="episode-number">Ep. ${ep.number}</span>
           </div>
           <div class="episode-info">
-            <h4>${ep.title || `Episódio ${ep.number}`}</h4>
+            <h4 class="episode-title">${ep.title || `Episódio ${ep.number}`}</h4>
             <div class="episode-sources">
               ${ep.sources.map(src => `
-                <a href="${src.url}" target="_blank" class="source-btn ${src.quality.toLowerCase()}">
-                  ${src.site} <span class="quality">${src.quality}</span>
+                <a href="${src.url}" 
+                   target="_blank" 
+                   rel="noopener noreferrer"
+                   class="source-btn ${src.quality.toLowerCase()}">
+                  <span class="source-site">${src.site}</span>
+                  <span class="source-quality">${src.quality}</span>
                 </a>
               `).join('')}
             </div>
@@ -89,107 +110,128 @@ function renderEpisodes(episodes) {
 }
 
 function displayAnimeDetails(anime) {
-  const container = document.getElementById('anime-details');
-  if (!container || !anime) return;
-
-  // Debug: Verificar dados recebidos
-  console.log('Dados do anime recebidos:', anime);
-
-  container.innerHTML = `
-    <!-- Banner do Anime -->
-    <div class="anime-banner-container">
-      <div class="anime-banner">
-        <img src="${anime.bannerImage || anime.coverImage?.extraLarge || '/static/images/default-banner.jpg'}" 
-             alt="Banner do anime"
-             onerror="this.src='/static/images/default-banner.jpg'">
-      </div>
-    </div>
-
-    <!-- Informações do Anime -->
-    <div class="anime-info">
-      <h2 id="anime-title">${anime.title?.romaji || anime.title?.english || anime.title?.native || 'Anime Desconhecido'}</h2>
-      
-      <!-- Metadados -->
-      <div class="anime-meta" id="anime-meta">
-        ${anime.averageScore ? `<div class="meta-item"><i class="fas fa-star"></i> ${anime.averageScore} Pontuação</div>` : ''}
-        ${anime.episodes ? `<div class="meta-item"><i class="fas fa-play"></i> ${anime.episodes} Episódios</div>` : ''}
-        ${anime.status ? `<div class="meta-item"><i class="fas fa-info-circle"></i> ${formatStatus(anime.status)}</div>` : ''}
-      </div>
-      
-      <!-- Sinopse -->
-      <div class="detail-section">
-        <h3 class="section-title"><i class="fas fa-book-open"></i> Sinopse</h3>
-        <p id="anime-synopsis">${anime.description ? anime.description.replace(/<[^>]*>/g, '') : 'Descrição não disponível.'}</p>
-      </div>
-      
-      <!-- Detalhes -->
-      <div class="detail-section">
-        <h3 class="section-title"><i class="fas fa-info-circle"></i> Detalhes</h3>
-        <div class="details-grid" id="anime-details-grid">
-          ${anime.startDate ? `
-          <div class="detail-item">
-            <h4><i class="fas fa-calendar-day"></i> Estreia</h4>
-            <p>${formatDate(anime.startDate)}</p>
-          </div>` : ''}
-          
-          ${anime.format ? `
-          <div class="detail-item">
-            <h4><i class="fas fa-film"></i> Formato</h4>
-            <p>${anime.format}</p>
-          </div>` : ''}
-          
-          ${anime.studios?.nodes?.length ? `
-          <div class="detail-item">
-            <h4><i class="fas fa-building"></i> Estúdio</h4>
-            <p>${anime.studios.nodes.map(s => s.name).join(', ')}</p>
-          </div>` : ''}
-          
-          ${anime.genres?.length ? `
-          <div class="detail-item">
-            <h4><i class="fas fa-tags"></i> Gêneros</h4>
-            <p>${anime.genres.slice(0, 5).join(', ')}</p>
-          </div>` : ''}
-        </div>
-      </div>
-      
-      <!-- Episódios -->
-      <div class="detail-section">
-        <h3 class="section-title"><i class="fas fa-play-circle"></i> Episódios</h3>
-        <div class="episodes-container" id="anime-episodes">
-          ${renderEpisodes(anime.episodes || [])}
-        </div>
-      </div>
-    </div>
-
-    <!-- Botão de Voltar -->
-    <a href="/" class="bottom-back-button">
-      <i class="fas fa-arrow-left"></i> Voltar para a Página Inicial
-    </a>
-  `;
-}
-
-// Função principal de carregamento
-async function loadAnimeData() {
-  // Obter ID da URL como fallback
-  const urlParams = new URLSearchParams(window.location.search);
-  const animeId = window.animeId || urlParams.get('id');
-  
-  console.log('ID do anime:', animeId); // Debug
-
-  if (!animeId) {
-    showError('ID do anime não especificado.');
-    return;
-  }
-
-  const container = document.getElementById('anime-details');
-  if (!container) {
-    console.error('Container de detalhes não encontrado');
-    return;
-  }
-
-  showLoading();
+  if (!animeDetailsContainer || !anime) return;
 
   try {
+    animeDetailsContainer.innerHTML = `
+      <div class="anime-content">
+        <!-- Banner -->
+        <div class="anime-banner-container">
+          <div class="anime-banner">
+            <img src="${anime.bannerImage || anime.coverImage?.extraLarge || '/static/images/default-banner.jpg'}" 
+                 alt="Banner do anime"
+                 loading="lazy"
+                 onerror="this.src='/static/images/default-banner.jpg'">
+          </div>
+        </div>
+
+        <!-- Informações principais -->
+        <div class="anime-main-info">
+          <h1 class="anime-title">
+            ${anime.title?.romaji || anime.title?.english || anime.title?.native || 'Anime Desconhecido'}
+          </h1>
+          
+          <div class="anime-meta">
+            ${anime.averageScore ? `
+              <div class="meta-item score">
+                <i class="fas fa-star"></i>
+                <span>${anime.averageScore}/100</span>
+              </div>
+            ` : ''}
+            
+            ${anime.status ? `
+              <div class="meta-item status">
+                <i class="fas fa-info-circle"></i>
+                <span>${formatStatus(anime.status)}</span>
+              </div>
+            ` : ''}
+            
+            ${anime.episodes ? `
+              <div class="meta-item episodes">
+                <i class="fas fa-play"></i>
+                <span>${anime.episodes} episódios</span>
+              </div>
+            ` : ''}
+          </div>
+          
+          ${anime.studios?.nodes?.filter(s => s.isAnimationStudio)?.length ? `
+            <div class="anime-studios">
+              <span class="studios-label">Estúdio:</span>
+              ${anime.studios.nodes
+                .filter(studio => studio.isAnimationStudio)
+                .map(studio => studio.name)
+                .join(', ')}
+            </div>
+          ` : ''}
+        </div>
+
+        <!-- Sinopse -->
+        <div class="anime-description-section">
+          <h2 class="section-title">Sinopse</h2>
+          <div class="anime-description">
+            ${anime.description ? 
+              anime.description.replace(/<[^>]*>/g, '') : 
+              'Descrição não disponível.'}
+          </div>
+        </div>
+
+        <!-- Detalhes adicionais -->
+        <div class="anime-details-section">
+          <h2 class="section-title">Detalhes</h2>
+          <div class="details-grid">
+            ${anime.startDate ? `
+              <div class="detail-item">
+                <span class="detail-label">
+                  <i class="fas fa-calendar-day"></i> Estreia:
+                </span>
+                <span class="detail-value">${formatDate(anime.startDate)}</span>
+              </div>
+            ` : ''}
+            
+            ${anime.format ? `
+              <div class="detail-item">
+                <span class="detail-label">
+                  <i class="fas fa-film"></i> Formato:
+                </span>
+                <span class="detail-value">${anime.format}</span>
+              </div>
+            ` : ''}
+            
+            ${anime.genres?.length ? `
+              <div class="detail-item">
+                <span class="detail-label">
+                  <i class="fas fa-tags"></i> Gêneros:
+                </span>
+                <span class="detail-value">${anime.genres.join(', ')}</span>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+
+        <!-- Episódios -->
+        <div class="episodes-section">
+          <h2 class="section-title">Episódios</h2>
+          ${renderEpisodes(anime.episodes)}
+        </div>
+      </div>
+    `;
+  } catch (error) {
+    console.error('Erro ao renderizar detalhes:', error);
+    showError('Erro ao exibir os detalhes do anime', false);
+  }
+}
+
+async function loadAnimeData(animeId) {
+  try {
+    // Validar ID
+    if (!animeId || !/^\d+$/.test(animeId)) {
+      showError('ID do anime inválido', false);
+      return;
+    }
+
+    currentAnimeId = animeId;
+    showLoading();
+
     if (typeof AnimeEpisodeSearcher === 'undefined') {
       throw new Error('Sistema de busca não disponível');
     }
@@ -197,19 +239,42 @@ async function loadAnimeData() {
     const searcher = new AnimeEpisodeSearcher();
     const data = await searcher.searchEpisodes(animeId);
     
-    if (!data || !data.title) {
-      throw new Error('Dados inválidos recebidos da API');
+    if (!data?.title) {
+      throw new Error('Dados do anime incompletos');
     }
     
     displayAnimeDetails(data);
+    retryCount = 0; // Resetar contador de tentativas
   } catch (error) {
-    console.error('Erro ao carregar anime:', error);
-    showError(`Falha ao carregar: ${error.message}`);
+    console.error('Erro no loadAnimeData:', error);
+    
+    if (retryCount < MAX_RETRIES) {
+      retryCount++;
+      setTimeout(() => loadAnimeData(currentAnimeId), RETRY_DELAY);
+      showError(`${error.message} (Tentativa ${retryCount}/${MAX_RETRIES})`, true);
+    } else {
+      showError('Não foi possível carregar os dados. Por favor, recarregue a página.', false);
+    }
   }
 }
 
-// Iniciar quando o DOM estiver pronto
+// Inicialização
 document.addEventListener('DOMContentLoaded', () => {
-  // Adicionar pequeno delay para garantir tudo está carregado
-  setTimeout(loadAnimeData, 100);
+  const urlParams = new URLSearchParams(window.location.search);
+  const animeId = urlParams.get('id');
+  
+  if (animeId) {
+    loadAnimeData(animeId);
+  } else {
+    showError('Nenhum ID de anime especificado na URL', false);
+  }
+});
+
+// Configurar botões
+retryButton?.addEventListener('click', () => {
+  if (currentAnimeId) loadAnimeData(currentAnimeId);
+});
+
+loadMoreButton?.addEventListener('click', () => {
+  // Implementar lógica para carregar mais episódios se necessário
 });
